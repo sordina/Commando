@@ -1,0 +1,21 @@
+name:                Commando
+version:             0.1.0.0
+synopsis:            Watch some files; Rerun a command
+homepage:            https://github.com/sordina/Commando
+license:             MIT
+license-file:        LICENSE
+author:              Lyndon Maydwell
+maintainer:          lyndon@sordina.net
+category:            Development
+build-type:          Simple
+cabal-version:       >=1.8
+
+executable commando
+  main-is: Commando.hs
+  build-depends:
+    base,
+    text,
+    system-filepath,
+    system-fileio,
+    fsnotify >= 0.0.6,
+    process
