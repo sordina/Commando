@@ -1,7 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- TODO: Allow command to be passed arguments from output of Commando
-
 module Main where
 
 import Prelude hiding            (FilePath)
