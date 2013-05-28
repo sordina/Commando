@@ -12,22 +12,22 @@ import Filesystem.Path.CurrentOS (FilePath, fromText)
 import Data.Text                 (pack)
 
 main :: IO ()
-main = getArgs >>= processOptions False False
+main = getArgs >>= options False False
 
-processOptions :: Bool -> Bool -> [String] -> IO ()
-processOptions _ _ ("-h"        : _) = help
-processOptions _ _ ("--help"    : _) = help
-processOptions _ c ("-s"        :xs) = processOptions True c    xs
-processOptions _ c ("--silent"  :xs) = processOptions True c    xs
-processOptions s _ ("-c"        :xs) = processOptions s    True xs
-processOptions s _ ("--consumer":xs) = processOptions s    True xs
-processOptions s c ("--"        :xs) = processCommand s    c    xs
-processOptions s c xs                = processCommand s    c    xs
+options :: Bool -> Bool -> [String] -> IO ()
+options _ _ ("-h"        : _) = help
+options _ _ ("--help"    : _) = help
+options _ c ("-s"        :xs) = options True c    xs
+options _ c ("--silent"  :xs) = options True c    xs
+options s _ ("-c"        :xs) = options s    True xs
+options s _ ("--consumer":xs) = options s    True xs
+options s c ("--"        :xs) = command s    c    xs
+options s c xs                = command s    c    xs
 
-processCommand :: Bool -> Bool -> [String] -> IO ()
-processCommand s c [command]      = getD >>= start s c command
-processCommand s c [command, dir] =          start s c command (mkPath dir)
-processCommand _ _ _              = help
+command :: Bool -> Bool -> [String] -> IO ()
+command s c [cmd]      = getD >>= start s c cmd
+command s c [cmd, dir] =          start s c cmd (mkPath dir)
+command _ _ _          = help
 
 help :: IO ()
 help = putStrLn "Usage: commando [--help | -h] [--silent | -s] [--consumer | -c] [--] <command> [directory]"
@@ -42,10 +42,10 @@ ite :: Bool -> t -> t -> t
 ite b t f = if b then t else f
 
 start :: Bool -> Bool -> String -> FilePath -> IO ()
-start silent consumer command dir = do
+start silent consumer cmd dir = do
   man <- startManager
-  watchTree man dir (const True) (ite consumer (void . rawSystem command . return . show)
-                                               (const $ void $ rawSystem command []))
+  watchTree man dir (const True) (ite consumer (void . rawSystem cmd . return . show)
+                                               (const $ void $ rawSystem cmd []))
   when (not silent) $ putStrLn "press retrun to stop"
   void $ getLine
   void $ stopManager man
