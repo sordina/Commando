@@ -25,18 +25,12 @@ options s c ("--"        :xs) = command s    c    xs
 options s c xs                = command s    c    xs
 
 command :: Bool -> Bool -> [String] -> IO ()
-command s c [cmd]      = getD >>= start s c cmd
-command s c [cmd, dir] =          start s c cmd (mkPath dir)
+command s c [cmd]      = getWorkingDirectory >>= start s c cmd
+command s c [cmd, dir] =                         start s c cmd (fromText $ pack $ dir)
 command _ _ _          = help
 
 help :: IO ()
 help = putStrLn "Usage: commando [--help | -h] [--silent | -s] [--consumer | -c] [--] <command> [directory]"
-
-mkPath :: String -> FilePath
-mkPath = fromText . pack
-
-getD :: IO FilePath
-getD = getWorkingDirectory
 
 start :: Bool -> Bool -> String -> FilePath -> IO ()
 start silent consumer cmd dir = do
