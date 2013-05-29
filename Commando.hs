@@ -38,14 +38,11 @@ mkPath = fromText . pack
 getD :: IO FilePath
 getD = getWorkingDirectory
 
-ite :: Bool -> t -> t -> t
-ite b t f = if b then t else f
-
 start :: Bool -> Bool -> String -> FilePath -> IO ()
 start silent consumer cmd dir = do
   man <- startManager
-  watchTree man dir (const True) (ite consumer (void . rawSystem cmd . return . show)
-                                               (const $ void $ rawSystem cmd []))
+  watchTree man dir (const True) (if consumer then void . rawSystem cmd . return . show
+                                              else const $ void $ rawSystem cmd [])
   when (not silent) $ putStrLn "press retrun to stop"
   void $ getLine
   void $ stopManager man
