@@ -17,5 +17,5 @@ executable commando
     text,
     system-filepath,
     system-fileio,
-    fsnotify >= 0.0.6,
+    fsnotify >= 0.0.13,
     process

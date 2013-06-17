@@ -4,7 +4,7 @@ module Main where
 
 import Prelude hiding            (FilePath)
 import Control.Monad             (void, when)
-import System.Process            (rawSystem)
+import System.Process            (rawSystem, runCommand)
 import System.Environment        (getArgs)
 import System.FSNotify           (startManager, watchTree, stopManager)
 import Filesystem                (getWorkingDirectory)
@@ -35,8 +35,8 @@ help = putStrLn "Usage: commando [--help | -h] [--silent | -s] [--consumer | -c]
 start :: Bool -> Bool -> String -> FilePath -> IO ()
 start silent consumer cmd dir = do
   man <- startManager
-  watchTree man dir (const True) (if consumer then void . rawSystem cmd . return . show
-                                              else const $ void $ rawSystem cmd [])
   when (not silent) $ putStrLn "press retrun to stop"
+  void $ watchTree man dir (const True) (if consumer then void . rawSystem cmd . return . show
+                                                     else const $ void $ runCommand cmd)
   void $ getLine
   void $ stopManager man
