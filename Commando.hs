@@ -10,8 +10,8 @@ import System.FSNotify           (startManager, watchTree, stopManager)
 import Filesystem                (getWorkingDirectory)
 import Filesystem.Path.CurrentOS (FilePath, fromText)
 import Data.Text                 (pack)
-import System.IO                 (hPutStrLn, hGetContents, hSetBinaryMode)
-import Control.Concurrent        (forkIO)
+import System.IO                 (hPutStr, hGetContents, hSetBinaryMode)
+import GHC.IO.Handle             (hClose)
 
 data Mode = StandAlone
           | Argument
@@ -38,7 +38,7 @@ command s c [cmd, dir] =                         start s c cmd (fromText $ pack 
 command _ _ _          = help
 
 help :: IO ()
-help = putStrLn "Usage: commando [--help | -h] [--silent | -s] [--consumer | -c] [--] <command> [directory]"
+help = putStrLn "Usage: commando [--help | -h] [--silent | -s] [--consumer | -c] [--stdin | -i] [--] <command> [directory]"
 
 start :: Bool -> Mode -> String -> FilePath -> IO ()
 start silent mode cmd dir = do
@@ -55,5 +55,6 @@ pipe :: String -> String -> IO ()
 pipe cmd param = do
   (hStdIn, stdOut, _stderr, _process) <- runInteractiveCommand cmd
   void $ hSetBinaryMode hStdIn False
-  void $ forkIO $ hPutStrLn hStdIn param
-  void $ forkIO $ hGetContents stdOut >>= putStrLn
+  void $ hPutStr hStdIn param
+  void $ hClose hStdIn
+  void $ hGetContents stdOut >>= putStrLn
