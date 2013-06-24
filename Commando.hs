@@ -10,7 +10,7 @@ import System.FSNotify           (startManager, watchTree, stopManager)
 import Filesystem                (getWorkingDirectory)
 import Filesystem.Path.CurrentOS (FilePath, fromText)
 import Data.Text                 (pack)
-import System.IO                 (hPutStr, hGetContents, hSetBinaryMode)
+import System.IO                 (hPutStrLn, hGetContents, hSetBinaryMode)
 import GHC.IO.Handle             (hClose)
 
 data Mode = StandAlone
@@ -55,6 +55,6 @@ pipe :: String -> String -> IO ()
 pipe cmd param = do
   (hStdIn, stdOut, _stderr, _process) <- runInteractiveCommand cmd
   void $ hSetBinaryMode hStdIn False
-  void $ hPutStr hStdIn param
+  void $ hPutStrLn hStdIn param
   void $ hClose hStdIn
-  void $ hGetContents stdOut >>= putStrLn
+  void $ hGetContents stdOut >>= putStr
