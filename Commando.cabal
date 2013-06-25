@@ -16,6 +16,7 @@ executable commando
     base,
     text,
     system-filepath,
+    optparse-applicative,
     system-fileio,
     fsnotify >= 0.0.13,
     process
