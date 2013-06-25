@@ -10,12 +10,13 @@ import System.FSNotify           (startManager, watchTree, stopManager)
 import Filesystem                (getWorkingDirectory)
 import Filesystem.Path.CurrentOS (FilePath, fromText)
 import Data.Text                 (pack)
-import System.IO                 (hPutStrLn, hGetContents, hSetBuffering, BufferMode(..), stdout, hIsEOF)
+import System.IO                 (hPutStrLn, hGetContents, hSetBuffering, BufferMode(..))
 import GHC.IO.Handle             (hClose, hFlush)
 import GHC.IO.Handle.Types       (Handle)
 import System.Process.Internals  (ProcessHandle)
 import Control.Applicative       ((<$>), (<*>))
 import Data.Monoid               (mempty, (<>))
+import Control.Concurrent        (forkIO)
 
 import qualified Options.Applicative as O
 
@@ -53,6 +54,9 @@ start o dir = do
   rc  <- if persist o then Just <$> startPipe (command' o)
                       else return Nothing
 
+  case rc of Just (_,so,_,_) -> void $ forkIO $ hGetContents so >>= putStr
+             _               -> return ()
+
   when (not $ quiet o) $ putStrLn "press retrun to stop"
 
   let cmd = command' o
@@ -77,23 +81,17 @@ startPipe cmd = do
   return rc
 
 pipe :: Maybe RunningProcess -> String -> String -> IO ()
-pipe Nothing   cmd arg = startPipe cmd >>= pipeRunning arg >>= pipeClose
+pipe Nothing   cmd arg = startPipe cmd >>= pipeRunning arg >>= pipeOutput >>= pipeClose
 pipe (Just rp) _   arg = void $ pipeRunning arg rp
+
+pipeOutput :: RunningProcess -> IO RunningProcess
+pipeOutput r@(_,so,_,_) = hGetContents so >>= putStr >> return r
 
 pipeClose :: RunningProcess -> IO ()
 pipeClose (hStdIn, _, _, _) = hClose hStdIn
 
 pipeRunning :: String -> RunningProcess -> IO RunningProcess
-pipeRunning param rc@(hStdIn, hStdOut, _stderr, _process) = do
-
+pipeRunning param rc@(hStdIn, _hStdOut, _stderr, _process) = do
   hPutStrLn hStdIn param
   hFlush hStdIn
-
-  eof <- hIsEOF hStdOut
-
-  when (not eof) $ do
-
-    hGetContents hStdOut >>= putStr
-    hFlush stdout
-
   return rc
