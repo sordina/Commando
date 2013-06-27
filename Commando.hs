@@ -18,7 +18,8 @@ import Data.Monoid               (mempty, Monoid, (<>))
 import Control.Concurrent        (forkIO)
 import Data.Maybe                (fromMaybe)
 
-import qualified Options.Applicative as O
+import qualified Options.Applicative.Builder.Internal as X
+import qualified Options.Applicative                  as O
 
 type RunningProcess = (Handle, Handle, Handle, ProcessHandle)
 
@@ -34,15 +35,21 @@ main :: IO ()
 main = O.execParser (O.info (O.helper <*> options) mempty) >>= start
 
 options :: O.Parser Options
-options = Options <$>      O.argument O.str ( O.metavar "COMMAND"              <> O.help "Command run on events")
-                  <*>      O.switch         ( O.short 'q' <> O.long "quiet"    <> O.help "Hide non-essential output")
-                  <*>      O.switch         ( O.short 'c' <> O.long "consumer" <> O.help "Pass events as argument to command")
-                  <*>      O.switch         ( O.short 'i' <> O.long "stdin"    <> O.help "Pipe events to command")
-                  <*>      O.switch         ( O.short 'p' <> O.long "persist"  <> O.help "Pipe events to persistent command")
-                  <*> cwd (O.argument O.str ( O.metavar "DIRECTORY"            <> O.help "Directory to monitor" ))
+options = Options <$> defStr "echo event" ( O.metavar "COMMAND"              <> O.help "Command run on events")
+                  <*> O.switch            ( O.short 'q' <> O.long "quiet"    <> O.help "Hide non-essential output")
+                  <*> O.switch            ( O.short 'c' <> O.long "consumer" <> O.help "Pass events as argument to command")
+                  <*> O.switch            ( O.short 'i' <> O.long "stdin"    <> O.help "Pipe events to command")
+                  <*> O.switch            ( O.short 'p' <> O.long "persist"  <> O.help "Pipe events to persistent command")
+                  <*> (dir <$> defStr "." ( O.metavar "DIRECTORY"            <> O.help "Directory to monitor" ))
 
-cwd :: O.Parser String -> O.Parser FilePath
-cwd = fmap (fromText . pack . fromMaybe ".") . O.optional
+defStr :: String -> X.Mod X.ArgumentFields String -> O.Parser String
+defStr a = def a . O.argument O.str
+
+def :: a -> O.Parser a -> O.Parser a
+def a = fmap (fromMaybe a) . O.optional
+
+dir :: String -> FilePath
+dir = fromText . pack
 
 start :: Options -> IO ()
 start o = do
