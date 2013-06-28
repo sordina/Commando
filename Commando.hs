@@ -1,5 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ViewPatterns      #-}
 
 module Main where
 
@@ -60,7 +59,7 @@ start o = do
 
   void $ forkIO $ whenM rc $ \(_,so,_,_) -> hGetContents so >>= putStr
 
-  when (not $ quiet o) $ putStrLn "press retrun to stop"
+  when (not $ quiet o) $ putStrLn "press return to stop"
 
   let cmd = command o
 
