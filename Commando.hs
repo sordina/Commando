@@ -35,12 +35,13 @@ main :: IO ()
 main = O.execParser (O.info (O.helper <*> options) mempty) >>= start
 
 options :: O.Parser Options
-options = Options <$> defStr "echo event" ( O.metavar "COMMAND"              <> O.help "Command run on events")
-                  <*> O.switch            ( O.short 'q' <> O.long "quiet"    <> O.help "Hide non-essential output")
-                  <*> O.switch            ( O.short 'c' <> O.long "consumer" <> O.help "Pass events as argument to command")
-                  <*> O.switch            ( O.short 'i' <> O.long "stdin"    <> O.help "Pipe events to command")
-                  <*> O.switch            ( O.short 'p' <> O.long "persist"  <> O.help "Pipe events to persistent command")
-                  <*> (dir <$> defStr "." ( O.metavar "DIRECTORY"            <> O.help "Directory to monitor" ))
+options = Options
+  <$> defStr "echo event" ( O.metavar "COMMAND"              <> O.help "Command run on events")
+  <*> O.switch            ( O.short 'q' <> O.long "quiet"    <> O.help "Hide non-essential output")
+  <*> O.switch            ( O.short 'c' <> O.long "consumer" <> O.help "Pass events as argument to command")
+  <*> O.switch            ( O.short 'i' <> O.long "stdin"    <> O.help "Pipe events to command")
+  <*> O.switch            ( O.short 'p' <> O.long "persist"  <> O.help "Pipe events to persistent command")
+  <*> (dir <$> defStr "." ( O.metavar "DIRECTORY"            <> O.help "Directory to monitor" ))
 
 defStr :: String -> X.Mod X.ArgumentFields String -> O.Parser String
 defStr a = def a . O.argument O.str
@@ -61,7 +62,7 @@ start o = do
 
   when (not $ quiet o) $ putStrLn "press retrun to stop"
 
-  let cmd = command   o
+  let cmd = command o
 
   void $ watchTree man (directory o) (const True)
        $ case (consumer o, stdin o || persist o )
