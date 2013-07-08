@@ -26,3 +26,7 @@ Useful in conjunction with [Conscript](https://github.com/sordina/Conscript):
 Emit "event" everytime a file is changed in the current directory:
 
     commando
+
+## Binaries
+
+OS X 10.7.5 - [http://sordina.binaries.s3.amazonaws.com/commando](http://sordina.binaries.s3.amazonaws.com/commando)
