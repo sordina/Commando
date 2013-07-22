@@ -5,8 +5,8 @@ module Main where
 import Prelude hiding            (FilePath)
 import Control.Monad             (void, when)
 import System.Process            (rawSystem, runCommand, runInteractiveCommand)
-import System.FSNotify           (startManager, watchTree, stopManager)
-import Filesystem.Path.CurrentOS (FilePath, fromText)
+import System.FSNotify           (startManager, watchTree, stopManager, Event(..))
+import Filesystem.Path.CurrentOS (FilePath, fromText, toText)
 import Data.Text                 (pack)
 import System.IO                 (hPutStrLn, hGetContents, hSetBuffering, BufferMode(..))
 import GHC.IO.Handle             (hClose, hFlush)
@@ -27,20 +27,22 @@ data Options = Options { command   :: String
                        , consumer  :: Bool
                        , stdin     :: Bool
                        , persist   :: Bool
+                       , display   :: Event -> String
                        , directory :: FilePath
-                       } deriving Show
+                       }
 
 main :: IO ()
 main = O.execParser (O.info (O.helper <*> options) mempty) >>= start
 
 options :: O.Parser Options
 options = Options
-  <$> defStr "echo event" ( O.metavar "COMMAND"              <> O.help "Command run on events")
-  <*> O.switch            ( O.short 'q' <> O.long "quiet"    <> O.help "Hide non-essential output")
-  <*> O.switch            ( O.short 'c' <> O.long "consumer" <> O.help "Pass events as argument to command")
-  <*> O.switch            ( O.short 'i' <> O.long "stdin"    <> O.help "Pipe events to command")
-  <*> O.switch            ( O.short 'p' <> O.long "persist"  <> O.help "Pipe events to persistent command")
-  <*> (dir <$> defStr "." ( O.metavar "DIRECTORY"            <> O.help "Directory to monitor" ))
+  <$> defStr "echo event" ( O.metavar "COMMAND"               <> O.help "Command run on events")
+  <*> O.switch            ( O.short 'q' <> O.long "quiet"     <> O.help "Hide non-essential output")
+  <*> O.switch            ( O.short 'c' <> O.long "consumer"  <> O.help "Pass events as argument to command")
+  <*> O.switch            ( O.short 'i' <> O.long "stdin"     <> O.help "Pipe events to command")
+  <*> O.switch            ( O.short 'p' <> O.long "persist"   <> O.help "Pipe events to persistent command")
+  <*> ((show <?> toFP)<$> ( O.switch ( O.short 'j' <> O.long "path-only" <> O.help "Only show the File-Path, not metadata")))
+  <*> (dir <$> defStr "." ( O.metavar "DIRECTORY"             <> O.help "Directory to monitor" ))
 
 defStr :: String -> X.Mod X.ArgumentFields String -> O.Parser String
 defStr a = def a . O.argument O.str
@@ -62,11 +64,12 @@ start o = do
   when (not $ quiet o) $ putStrLn "press return to stop"
 
   let cmd = command o
+      dsp = display o
 
   void $ watchTree man (directory o) (const True)
        $ case (consumer o, stdin o || persist o )
-           of (True      , _    ) -> void . rawSystem cmd . return . show
-              (_         , True ) -> void . pipe rc cmd . show
+           of (True      , _    ) -> void . rawSystem cmd . return . dsp
+              (_         , True ) -> void . pipe rc cmd . dsp
               (_         , _    ) -> const $ void $ runCommand cmd
 
   void $ getLine
@@ -99,3 +102,11 @@ pipeSend param rc@(hStdIn, _hStdOut, _stderr, _process) = do
   hPutStrLn hStdIn param
   hFlush hStdIn
   return rc
+
+(<?>) :: a -> a -> Bool -> a
+x <?> y = \b -> if b then y else x
+
+toFP :: Event -> String
+toFP (Added    fp _) = show (either id id (toText fp))
+toFP (Modified fp _) = show (either id id (toText fp))
+toFP (Removed  fp _) = show (either id id (toText fp))
