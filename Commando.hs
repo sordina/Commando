@@ -7,7 +7,7 @@ import Control.Monad             (void, when)
 import System.Process            (rawSystem, runCommand, runInteractiveCommand)
 import System.FSNotify           (startManager, watchTree, stopManager, Event(..))
 import Filesystem.Path.CurrentOS (FilePath, fromText, toText)
-import Data.Text                 (pack)
+import Data.Text                 (pack, unpack)
 import System.IO                 (hPutStrLn, hGetContents, hSetBuffering, BufferMode(..))
 import GHC.IO.Handle             (hClose, hFlush)
 import GHC.IO.Handle.Types       (Handle)
@@ -107,6 +107,6 @@ pipeSend param rc@(hStdIn, _hStdOut, _stderr, _process) = do
 x <?> y = \b -> if b then y else x
 
 toFP :: Event -> String
-toFP (Added    fp _) = show (either id id (toText fp))
-toFP (Modified fp _) = show (either id id (toText fp))
-toFP (Removed  fp _) = show (either id id (toText fp))
+toFP (Added    fp _) = unpack (either id id (toText fp))
+toFP (Modified fp _) = unpack (either id id (toText fp))
+toFP (Removed  fp _) = unpack (either id id (toText fp))
