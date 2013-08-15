@@ -94,6 +94,8 @@ start c o = do
 
   whenM rc pipeClose
 
+  closeChan c
+
 whenM :: Monad m => Maybe a -> (a -> m ()) -> m ()
 whenM m f = maybe (return ()) f m
 
@@ -132,3 +134,6 @@ type CH = Chan (Maybe String)
 
 putChan :: Chan (Maybe a) -> a -> IO ()
 putChan c = writeChan c . Just
+
+closeChan :: Chan (Maybe a) -> IO ()
+closeChan c = writeChan c Nothing
