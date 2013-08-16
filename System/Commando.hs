@@ -3,11 +3,11 @@
 -- | A library providing an interface to generate a lazy stream of command
 -- results from events occurring in a directory.
 
-module System.Commando (Options(..), options, commando) where
+module System.Commando (module Data.Default, Options(..), options, commando) where
 
 import Prelude hiding            (FilePath)
 import Control.Monad             (void)
-import System.Process            (rawSystem, runCommand, runInteractiveCommand)
+import System.Process            (runInteractiveCommand)
 import System.FSNotify           (startManager, watchTree, stopManager, Event(..))
 import Filesystem.Path.CurrentOS (FilePath, fromText, toText)
 import Data.Text                 (pack, unpack)
@@ -23,6 +23,8 @@ import Control.Concurrent.Chan   (newChan, writeChan, getChanContents, Chan)
 
 import qualified Options.Applicative.Builder.Internal as X
 import qualified Options.Applicative                  as O
+
+import Data.Default
 
 type RunningProcess = (Handle, Handle, Handle, ProcessHandle)
 
@@ -44,11 +46,13 @@ data Options = Options { -- | The commando to run
                        , directory :: FilePath
                        }
 
+instance Default Options where def = Options "echo" True True False False (show . toFP) "."
+
 -- | The main listening loop.
 commando :: Options -> IO [String]
 commando o = do
   c <- newChan
-  start c o
+  void $ forkIO $ start c o
   catMaybes . takeWhile isJust <$> getChanContents c
 
 -- | An optparse-applicative parser for command-line options.
@@ -63,10 +67,10 @@ options = Options
   <*> (dir <$> defStr "." ( O.metavar "DIRECTORY"             <> O.help "Directory to monitor" ))
 
 defStr :: String -> X.Mod X.ArgumentFields String -> O.Parser String
-defStr a = def a . O.argument O.str
+defStr a = xor a . O.argument O.str
 
-def :: a -> O.Parser a -> O.Parser a
-def a = fmap (fromMaybe a) . O.optional
+xor :: a -> O.Parser a -> O.Parser a
+xor a = fmap (fromMaybe a) . O.optional
 
 dir :: String -> FilePath
 dir = fromText . pack
@@ -77,24 +81,28 @@ start c o = do
   rc  <- if persist o then Just <$> startPipe (command o)
                       else return Nothing
 
-  void $ forkIO $ whenM rc $ \(_,so,_,_) -> hGetContents so >>= putChan c
+  void $ forkIO $ whenM rc $ \(_,so,_,_) -> hGetContents so >>= mapM_ (putChan c) . lines
 
   let cmd = command o
       dsp = display o
 
   void $ watchTree man (directory o) (const True)
        $ case (consumer o, stdin o || persist o )
-           of (True      , _    ) -> void . rawSystem cmd . return . dsp
+           of (True      , _    ) -> systemChan c cmd . return . dsp
               (_         , True ) -> void . pipe c rc cmd . dsp
-              (_         , _    ) -> const $ void $ runCommand cmd
+              (_         , _    ) -> const $ systemChan c cmd []
 
   void $ getLine
-
   void $ stopManager man
-
   whenM rc pipeClose
-
   closeChan c
+
+systemChan :: CH -> String -> [String] -> IO ()
+systemChan c cmd as = do
+  (i,o,e,_) <- runInteractiveCommand (cmd ++ " " ++ (as >>= show))
+  hClose i
+  hGetContents o >>= putChan c
+  hGetContents e >>= putChan c
 
 whenM :: Monad m => Maybe a -> (a -> m ()) -> m ()
 whenM m f = maybe (return ()) f m
@@ -132,8 +140,8 @@ toFP (Removed  fp _) = unpack (either id id (toText fp))
 -- Chans
 type CH = Chan (Maybe String)
 
-putChan :: Chan (Maybe a) -> a -> IO ()
-putChan c = writeChan c . Just
+putChan :: CH -> String -> IO ()
+putChan c s = (writeChan c . Just) s
 
 closeChan :: Chan (Maybe a) -> IO ()
 closeChan c = writeChan c Nothing
