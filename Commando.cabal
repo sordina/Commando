@@ -31,7 +31,7 @@ description:
   .
   See the "System.Commando" module documentation for more details.
   .
-  The Commando main module is a good example of using Commando as a library.
+  The Commando executable module is a good example of using Commando as a library.
 
 executable commando
   main-is: Commando.hs
