@@ -1,5 +1,5 @@
 name:                Commando
-version:             1.0.0.1
+version:             1.0.0.2
 synopsis:            Watch some files; Rerun a command
 homepage:            https://github.com/sordina/Commando
 license:             MIT
