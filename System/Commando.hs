@@ -81,7 +81,7 @@ start c o = do
   rc  <- if persist o then Just <$> startPipe (command o)
                       else return Nothing
 
-  void $ forkIO $ whenM rc $ \(_,so,_,_) -> hGetContents so >>= mapM_ (putChan c) . lines
+  void $ forkIO $ whenM rc $ \(_,so,_,_) -> hGetContents so >>= mapM_ (putChan c . (++ "\n")) . lines
 
   let cmd = command o
       dsp = display o
