@@ -29,4 +29,4 @@ Emit "event" everytime a file is changed in the current directory:
 
 ## Binaries
 
-OS X 10.7.5 - [http://sordina.binaries.s3.amazonaws.com/commando](http://sordina.binaries.s3.amazonaws.com/commando)
+OS X 10.7.5 - [commando-1.0.0.3.zip](http://sordina.binaries.s3.amazonaws.com/commando-1.0.0.3.zip)
