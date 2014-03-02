@@ -7,7 +7,7 @@ module System.Commando (module Data.Default, Options(..), options, commando) whe
 
 import Prelude hiding            (FilePath)
 import Control.Monad             (void)
-import System.Process            (runInteractiveCommand)
+import System.Process            (waitForProcess, createProcess, CreateProcess, shell, proc, StdStream(..), runInteractiveCommand, terminateProcess)
 import System.FSNotify           (startManager, watchTree, stopManager, Event(..))
 import Filesystem.Path.CurrentOS (FilePath, fromText, toText)
 import Data.Text                 (pack, unpack)
@@ -99,10 +99,11 @@ start c o = do
 
 systemChan :: CH -> String -> [String] -> IO ()
 systemChan c cmd as = do
-  (i,o,e,_) <- runInteractiveCommand (cmd ++ " " ++ (as >>= show))
+  (i,o,e,pid) <- runInteractiveCommand (cmd ++ " " ++ (as >>= show))
   hClose i
   hGetContents o >>= putChan c
   hGetContents e >>= putChan c
+  void $ waitForProcess pid
 
 whenM :: Monad m => Maybe a -> (a -> m ()) -> m ()
 whenM m f = maybe (return ()) f m
