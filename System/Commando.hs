@@ -63,7 +63,7 @@ options = Options
   <*> O.switch            ( O.short 'c' <> O.long "consumer"  <> O.help "Pass events as argument to command")
   <*> O.switch            ( O.short 'i' <> O.long "stdin"     <> O.help "Pipe events to command")
   <*> O.switch            ( O.short 'p' <> O.long "persist"   <> O.help "Pipe events to persistent command")
-  <*> ((show <?> toFP)<$> ( O.switch ( O.short 'j' <> O.long "path-only" <> O.help "Only show the File-Path, not metadata")))
+  <*> ((show <?> toFP) <$>  O.switch ( O.short 'j' <> O.long "path-only" <> O.help "Only show the File-Path, not metadata"))
   <*> (dir <$> defStr "." ( O.metavar "DIRECTORY"             <> O.help "Directory to monitor" ))
 
 defStr :: String -> X.Mod X.ArgumentFields String -> O.Parser String
@@ -92,7 +92,7 @@ start c o = do
               (_         , True ) -> void . pipe c rc cmd . dsp
               (_         , _    ) -> const $ systemChan c cmd []
 
-  void $ getLine
+  void getLine
   void $ stopManager man
   whenM rc pipeClose
   closeChan c
@@ -142,7 +142,7 @@ toFP (Removed  fp _) = unpack (either id id (toText fp))
 type CH = Chan (Maybe String)
 
 putChan :: CH -> String -> IO ()
-putChan c s = (writeChan c . Just) s
+putChan c = writeChan c . Just
 
 closeChan :: Chan (Maybe a) -> IO ()
 closeChan c = writeChan c Nothing

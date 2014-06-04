@@ -3,7 +3,7 @@
 module Main where
 
 import Data.Monoid         (mempty)
-import Control.Monad       (when)
+import Control.Monad       (unless)
 import System.Commando     (commando, options, quiet)
 import Options.Applicative (info, helper, execParser, (<*>))
 import System.IO
@@ -14,5 +14,5 @@ main = do
   hSetBuffering stderr LineBuffering
 
   opts <- execParser (info (helper <*> options) mempty)
-  when (not $ quiet opts) $ putStrLn "press return to quit"
+  unless (quiet opts) $ putStrLn "press return to quit"
   commando opts >>= mapM_ putStr
