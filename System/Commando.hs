@@ -43,7 +43,7 @@ data Options = Options { -- | The commando to run
                          -- | Display show function used to translate events to strings
                        , display   :: Event -> String
                          -- | The directory listened to - Default is the current directory.
-                       , directory :: FilePath
+                       , directory :: String
                        }
 
 instance Default Options where def = Options "echo" True True False False (show . toFP) "."
@@ -64,7 +64,7 @@ options = Options
   <*> O.switch            ( O.short 'i' <> O.long "stdin"     <> O.help "Pipe events to command")
   <*> O.switch            ( O.short 'p' <> O.long "persist"   <> O.help "Pipe events to persistent command")
   <*> ((show <?> toFP) <$>  O.switch ( O.short 'j' <> O.long "path-only" <> O.help "Only show the File-Path, not metadata"))
-  <*> (dir <$> defStr "." ( O.metavar "DIRECTORY"             <> O.help "Directory to monitor" ))
+  <*> (defStr "."         ( O.metavar "DIRECTORY"             <> O.help "Directory to monitor" ))
 
 defStr :: String -> X.Mod X.ArgumentFields String -> O.Parser String
 defStr a = xor a . O.argument O.str
@@ -134,9 +134,9 @@ pipeSend param rc@(hStdIn, _hStdOut, _stderr, _process) = do
 x <?> y = \b -> if b then y else x
 
 toFP :: Event -> String
-toFP (Added    fp _) = unpack (either id id (toText fp))
-toFP (Modified fp _) = unpack (either id id (toText fp))
-toFP (Removed  fp _) = unpack (either id id (toText fp))
+toFP (Added    fp _ _) = fp
+toFP (Modified fp _ _) = fp
+toFP (Removed  fp _ _) = fp
 
 -- Chans
 type CH = Chan (Maybe String)
