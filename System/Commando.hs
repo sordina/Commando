@@ -7,16 +7,14 @@ module System.Commando (module Data.Default, Options(..), options, commando) whe
 
 import Prelude hiding            (FilePath)
 import Control.Monad             (void)
-import System.Process            (waitForProcess, createProcess, CreateProcess, shell, proc, StdStream(..), runInteractiveCommand, terminateProcess)
+import System.Process            (waitForProcess, runInteractiveCommand)
 import System.FSNotify           (startManager, watchTree, stopManager, Event(..))
-import Filesystem.Path.CurrentOS (FilePath, fromText, toText)
-import Data.Text                 (pack, unpack)
+import Filesystem.Path.CurrentOS (FilePath, fromText, encodeString)
+import Data.Text                 (pack)
 import System.IO                 (hPutStrLn, hGetContents, hSetBuffering, BufferMode(..))
 import GHC.IO.Handle             (hClose, hFlush)
 import GHC.IO.Handle.Types       (Handle)
 import System.Process.Internals  (ProcessHandle)
-import Control.Applicative       ((<$>), (<*>))
-import Data.Monoid               ((<>))
 import Control.Concurrent        (forkIO)
 import Data.Maybe                (fromMaybe, isJust, catMaybes)
 import Control.Concurrent.Chan   (newChan, writeChan, getChanContents, Chan)
@@ -86,7 +84,7 @@ start c o = do
   let cmd = command o
       dsp = display o
 
-  void $ watchTree man (directory o) (const True)
+  void $ watchTree man (encodeString $ directory o) (const True)
        $ case (consumer o, stdin o || persist o )
            of (True      , _    ) -> systemChan c cmd . return . dsp
               (_         , True ) -> void . pipe c rc cmd . dsp
@@ -134,9 +132,10 @@ pipeSend param rc@(hStdIn, _hStdOut, _stderr, _process) = do
 x <?> y = \b -> if b then y else x
 
 toFP :: Event -> String
-toFP (Added    fp _) = unpack (either id id (toText fp))
-toFP (Modified fp _) = unpack (either id id (toText fp))
-toFP (Removed  fp _) = unpack (either id id (toText fp))
+toFP (Added    fp _ _) = fp
+toFP (Modified fp _ _) = fp
+toFP (Removed  fp _ _) = fp
+toFP (Unknown  fp _ _) = fp
 
 -- Chans
 type CH = Chan (Maybe String)
